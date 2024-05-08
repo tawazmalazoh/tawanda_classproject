@@ -17,17 +17,19 @@ resource "aws_internet_gateway" "gw" {
 
 
 # creating  SUBNET 1
-resource "aws_subnet" "public1" {
+resource "aws_subnet" "public123" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.subnet_cidr_public1
   map_public_ip_on_launch = true
+  availability_zone       = "us-east-2a"
 }
 
 # SUBNET 2
-resource "aws_subnet" "public2" {
+resource "aws_subnet" "public234" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.subnet_cidr_public2
   map_public_ip_on_launch = true
+  availability_zone       = "us-east-2b"
 }
 
 
@@ -45,12 +47,12 @@ resource "aws_route" "internet_access" {
 
 # Association of subnets with route table
 resource "aws_route_table_association" "a" {
-  subnet_id      = aws_subnet.public1.id
+  subnet_id      = aws_subnet.public123.id
   route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "b" {
-  subnet_id      = aws_subnet.public2.id
+  subnet_id      = aws_subnet.public234.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -126,18 +128,18 @@ resource "aws_autoscaling_group" "asg" {
   launch_configuration = aws_launch_configuration.asg_config.id
   min_size             = 2
   max_size             = 10
-  vpc_zone_identifier  = [aws_subnet.public1.id, aws_subnet.public2.id]
+  vpc_zone_identifier  = [aws_subnet.public123.id, aws_subnet.public234.id]
 }
 
 
 
 #ALB
-resource "aws_lb" "main" {
-  name               = "my-lb"
+resource "aws_lb" "lbtawazmain" {
+  name               = "lbtawazmain"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public1.id, aws_subnet.public2.id]
+  subnets            = [aws_subnet.public123.id, aws_subnet.public234.id]
 }
 
 resource "aws_lb_target_group" "tg" {
@@ -148,7 +150,7 @@ resource "aws_lb_target_group" "tg" {
 }
 
 resource "aws_lb_listener" "front_end" {
-  load_balancer_arn = aws_lb.main.arn
+  load_balancer_arn = aws_lb.lbtawazmain.arn
   port              = 80
   protocol          = "HTTP"
   default_action {
@@ -160,21 +162,18 @@ resource "aws_lb_listener" "front_end" {
 
 
 #S3 bucket
-resource "aws_s3_bucket" "b" {
-  bucket = "my-tf-test-bucket"
- 
+resource "aws_s3_bucket" "btaws123" {
+  bucket = "btaws123"
+
 }
 
-resource "aws_s3_bucket_acl" "b_acl" {
-  bucket = aws_s3_bucket.b.id
-  acl    = "private"
-}
+
 
 
 
 # lAM roles
-resource "aws_iam_role" "ec2_role" {
-  name = "ec2_role"
+resource "aws_iam_role" "Tawaz_role" {
+  name = "Tawaz_role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -192,7 +191,7 @@ resource "aws_iam_role" "ec2_role" {
 
 # lAM Policy
 resource "aws_iam_role_policy" "ec2_policy" {
-  role = aws_iam_role.ec2_role.id
+  role = aws_iam_role.Tawaz_role.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -212,16 +211,18 @@ resource "aws_iam_role_policy" "ec2_policy" {
 # Database
 resource "aws_db_subnet_group" "my_db_subnet_group" {
   name       = "my-db-subnet-group"
-  subnet_ids = [aws_subnet.public1.id, aws_subnet.public2.id]
+  subnet_ids = [aws_subnet.public123.id, aws_subnet.public234.id]
+  
 }
 
-resource "aws_db_instance" "default" {
-  identifier             = "mydbinstance"
-  instance_class         = var.db_instance_type
-  allocated_storage      = 20
-  engine                 = "mysql"
-  username               = "dbuser"
-  password               = "dbpassword"
-  db_subnet_group_name   = aws_db_subnet_group.my_db_subnet_group.name
-  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+
+resource "aws_db_instance" "tawazdb" {
+  allocated_storage    = 10
+  db_name              = "mydb"
+  engine               = "mysql"
+  engine_version       = "5.7"
+  instance_class       = "db.t3.micro"
+  username             = "tawazmalazoh123"
+  password             = "teeoneMalazoh123"
+  skip_final_snapshot  = true
 }
